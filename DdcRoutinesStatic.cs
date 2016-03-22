@@ -149,7 +149,7 @@ namespace DDC.Autotests.Framework
         /// </summary>
         public static void RemoveContractById(DbOperations dbContext, string contractId)
         {
-            SqlCommand sql = new SqlCommand("delete from ddc.Contract where Id=@ContractId)", dbContext.GetConnection());
+            SqlCommand sql = new SqlCommand("delete from ddc.Contract where Id=@ContractId", dbContext.GetConnection());
             sql.Parameters.AddWithValue("@ContractId", contractId);
             sql.ExecuteNonQuery();
         }
@@ -189,6 +189,13 @@ namespace DDC.Autotests.Framework
         {
             SqlCommand sql = new SqlCommand("delete ddc.Condition where id = @ConditionId", dbContext.GetConnection());
             sql.Parameters.AddWithValue("@ConditionId", conditionId);
+            sql.ExecuteNonQuery();
+        }
+
+        public static void RemoveConditionByContract(DbOperations dbContext, string ContractId)
+        {
+            SqlCommand sql = new SqlCommand("delete ddc.Condition where ContractId = @ContractId", dbContext.GetConnection());
+            sql.Parameters.AddWithValue("@ContractId", ContractId);
             sql.ExecuteNonQuery();
         }
 
@@ -244,6 +251,13 @@ namespace DDC.Autotests.Framework
             sql.Parameters.AddWithValue("@Type", (int)type);
             sql.Parameters.AddWithValue("@ConditionId", conditionId);
             sql.Parameters.AddWithValue("@LinkedEntityId", linkedEntityId);
+            sql.ExecuteNonQuery();
+        }
+
+        public static void RemoveRuleOfCalcByContract(DbOperations dbContext, string ContractId)
+        {
+            SqlCommand sql = new SqlCommand("delete from ddc.RuleOfCalculating where ConditionId in (SELECT id from ddc.condition where ContractId = @ContractId)", dbContext.GetConnection());
+            sql.Parameters.AddWithValue("@ContractId", ContractId);
             sql.ExecuteNonQuery();
         }
 
@@ -329,6 +343,13 @@ namespace DDC.Autotests.Framework
             sql.ExecuteNonQuery();
         }
 
+        public static void RemoveGoodsRecord(DbOperations dbContext, string store, string artNo)
+        {
+            SqlCommand sql = new SqlCommand("DELETE FROM ddc.GoodsRecord where SAP_CODE=@store and ART_NO=@artNo", dbContext.GetConnection());
+            sql.Parameters.AddWithValue("@store", store);
+            sql.Parameters.AddWithValue("@artNo", artNo);
+            sql.ExecuteNonQuery();
+        }
         /// <summary>
         /// Check expected test result in DDC.PeriodCalculation table
         /// </summary>
@@ -420,6 +441,13 @@ namespace DDC.Autotests.Framework
             sql.ExecuteNonQuery();
         }
 
+        public static void RemoveCustomerOrderByArtNo(DbOperations dbContext, string artNo)
+        {
+            SqlCommand sql = new SqlCommand("DELETE FROM ddc.CustomerOrder WHERE ART_NO=@ART_NO", dbContext.GetConnection());
+            sql.Parameters.AddWithValue("@ART_NO", artNo);
+            sql.ExecuteNonQuery();
+        }
+
         /// <summary>
         /// Create new Product and add it to ddc.Product table
         /// </summary>
@@ -447,6 +475,13 @@ namespace DDC.Autotests.Framework
             return prodId;
         }
 
+        public static void RemoveProduct(DbOperations dbContext, string artNo)
+        {
+            SqlCommand sql = new SqlCommand("DELETE FROM ddc.Product where Id = @Id", dbContext.GetConnection());
+            sql.Parameters.AddWithValue("@id", artNo);
+            sql.ExecuteNonQuery();
+        }
+
         /// <summary>
         /// Get (new) article number that doesn't exist in GoodsRecord.ART_NO.
         /// </summary>
@@ -465,6 +500,8 @@ namespace DDC.Autotests.Framework
             while (reader.HasRows);
             return newArt.ToString();
         }
+
+        
 
         /// <summary>
         /// Get (new) store SAP_CODE that doesn't exist in GoodsRecord.SAP_CODE.
@@ -500,6 +537,33 @@ namespace DDC.Autotests.Framework
             }
             while (store == excludedStore);
             return store;
+        }
+
+        public static void CleanUp(DbOperations dbContext, string periodId, string artNo, string contractId, string store, string supplierTitle)
+        {
+            if (supplierTitle != "")
+            {
+                RemoveSupplier(dbContext, supplierTitle);
+            }
+            if (artNo != "")
+            {
+                RemoveProduct(dbContext, artNo);
+                RemoveCustomerOrderByArtNo(dbContext, artNo);
+                if (store != "")
+                {
+                    RemoveGoodsRecord(dbContext, store, artNo);
+                }
+            }
+            if (contractId != "")
+            {
+                RemoveRuleOfCalcByContract(dbContext, contractId);
+                RemoveConditionByContract(dbContext, contractId);
+                RemoveContractById(dbContext, contractId);
+            }
+            if (periodId != "")
+            {
+                RemovePeriod(dbContext, periodId);
+            }
         }
 
         public static string RandomString(int size)
